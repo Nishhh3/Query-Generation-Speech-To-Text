@@ -9,10 +9,16 @@ This is a small feature from one of my projects.
 
 ## Installation
 1. Clone the repo
-``` git clone https://github.com/Nishhh3/Query-Generation-Speech-To-Text.git ```
+```
+git clone https://github.com/Nishhh3/Query-Generation-Speech-To-Text.git 
+```
 2. cd repo-name
 3. Installing requirements
-```pip install -r requirements.txt```
+```
+pip install -r requirements.txt
+```
 
 ## Usage 
-``` python app.py ```
+```
+python app.py
+```

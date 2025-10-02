@@ -1,0 +1,214 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Submit Complaint</title>
+  <style>
+    body {
+      font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+      background: #f9f9f9;
+      margin: 0;
+      padding: 20px;
+      display: flex;
+      justify-content: center;
+    }
+
+    .container {
+      max-width: 900px;
+      width: 100%;
+      background: #fff;
+      padding: 25px;
+      border-radius: 12px;
+      box-shadow: 0 3px 12px rgba(0,0,0,0.1);
+    }
+
+    h2, h3 {
+      text-align: center;
+      color: #c62828;
+      margin-bottom: 20px;
+    }
+
+    label {
+      display: block;
+      font-weight: bold;
+      margin: 12px 0 6px;
+      color: #444;
+    }
+
+    select, input[type="file"], textarea {
+      width: 100%;
+      padding: 10px;
+      border: 1px solid #ccc;
+      border-radius: 6px;
+      font-size: 14px;
+      margin-bottom: 15px;
+      transition: border-color 0.3s;
+    }
+
+    select:focus, input[type="file"]:focus, textarea:focus {
+      border-color: #c62828;
+      outline: none;
+    }
+
+    button {
+      width: 100%;
+      padding: 12px;
+      background: #c62828;
+      border: none;
+      border-radius: 6px;
+      color: #fff;
+      font-size: 15px;
+      font-weight: bold;
+      cursor: pointer;
+      transition: background 0.3s ease;
+    }
+
+    button:hover {
+      background: #b71c1c;
+    }
+
+    pre {
+      background: #f5f5f5;
+      padding: 12px;
+      border-radius: 6px;
+      font-size: 13px;
+      overflow-x: auto;
+    }
+
+    /* Table styling */
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      margin-top: 15px;
+      box-shadow: 0 2px 6px rgba(0,0,0,0.05);
+      border-radius: 8px;
+      overflow: hidden;
+    }
+
+    th, td {
+      padding: 12px 15px;
+      text-align: left;
+    }
+
+    th {
+      background: #c62828;
+      color: #fff;
+      font-size: 14px;
+      text-transform: uppercase;
+    }
+
+    tr:nth-child(even) { background: #f9f9f9; }
+    tr:hover { background: #ffecec; }
+
+    .status {
+      padding: 4px 8px;
+      border-radius: 6px;
+      font-weight: bold;
+      font-size: 12px;
+      color: #fff;
+    }
+    .Pending { background: #f57c00; }
+    .InProgress { background: #0288d1; }
+    .Resolved { background: #2e7d32; }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <h2>Submit Complaint</h2>
+    <form id="complaint-form" enctype="multipart/form-data">
+      <label for="type">Complaint Type</label>
+      <select id="type" name="type">
+        <option value="video">Video</option>
+        <option value="audio">Audio</option>
+        <option value="text">Text</option>
+      </select>
+
+      <div id="file-input">
+        <label for="file">Upload File</label>
+        <input type="file" name="file" id="file" />
+      </div>
+
+      <div id="text-input" style="display:none">
+        <label for="text">Complaint Text</label>
+        <textarea name="text" id="text" rows="6" placeholder="Type your complaint..."></textarea>
+      </div>
+
+      <button type="submit">Submit</button>
+    </form>
+
+    <h3>Result</h3>
+    <pre id="result"></pre>
+
+    <h3>My Previous Complaints</h3>
+    <table id="tickets-table">
+      <thead>
+        <tr>
+          <th>Ticket Code</th>
+          <th>Type</th>
+          <th>Transcript</th>
+          <th>Department</th>
+          <th>Category</th>
+          <th>Status</th>
+        </tr>
+      </thead>
+      <tbody></tbody>
+    </table>
+  </div>
+
+  <script>
+    const typeSelect = document.getElementById("type");
+    const fileDiv = document.getElementById("file-input");
+    const textDiv = document.getElementById("text-input");
+
+    typeSelect.addEventListener("change", () => {
+      fileDiv.style.display = typeSelect.value === "text" ? "none" : "block";
+      textDiv.style.display = typeSelect.value === "text" ? "block" : "none";
+    });
+
+    document.getElementById("complaint-form").addEventListener("submit", async (e) => {
+      e.preventDefault();
+      const form = new FormData();
+      const type = typeSelect.value;
+      form.append("type", type);
+
+      if (type === "text") {
+        form.append("text", document.getElementById("text").value);
+      } else {
+        const file = document.getElementById("file").files[0];
+        if (!file) { alert("Please choose a file."); return; }
+        form.append("file", file);
+      }
+
+      document.getElementById("result").textContent = "Processing...";
+      const resp = await fetch("/submit", { method: "POST", body: form });
+      const j = await resp.json();
+      document.getElementById("result").textContent = JSON.stringify(j, null, 2);
+
+      loadTickets(); // refresh tickets list
+    });
+
+    async function loadTickets() {
+      const resp = await fetch("/tickets");
+      const tickets = await resp.json();
+      const tbody = document.querySelector("#tickets-table tbody");
+      tbody.innerHTML = "";
+      tickets.forEach(t => {
+        const tr = document.createElement("tr");
+        tr.innerHTML = `
+          <td>${t.ticket_code}</td>
+          <td>${t.input_type}</td>
+          <td>${t.transcript.substring(0,50)}...</td>
+          <td>${t.department}</td>
+          <td>${t.category}</td>
+          <td><span class="status ${t.status.replace(' ','')}">${t.status}</span></td>
+        `;
+        tbody.appendChild(tr);
+      });
+    }
+
+    // Load tickets on page load
+    loadTickets();
+  </script>
+</body>
+</html>
